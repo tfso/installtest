@@ -5,7 +5,6 @@
 xsd = require('libxml-xsd');
 
 function ping (host, callback){
-    host = host || "first";
     //do http request here.
     //when finish, call "callback"
     console.log(new Date(), host);
@@ -15,7 +14,7 @@ function ping (host, callback){
 }
 
 function query_host (){
-    ping(host, function (status) {
+    ping(host || "empty", function (status) {
         //..  do stuff like saving status in database, etc.
         setTimeout (query_host, 4000) //queue for next ping in the next predefined interval
     });
