@@ -14,7 +14,8 @@ function ping (host, callback){
 }
 
 function query_host (){
-    ping(host || "empty", function (status) {
+    var host =  "empty";
+    ping(host, function (status) {
         //..  do stuff like saving status in database, etc.
         setTimeout (query_host, 4000) //queue for next ping in the next predefined interval
     });
