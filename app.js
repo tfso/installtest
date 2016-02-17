@@ -5,6 +5,7 @@
 xsd = require('libxml-xsd');
 
 function ping (host, callback){
+    host = host || "first";
     //do http request here.
     //when finish, call "callback"
     console.log(new Date(), host);
