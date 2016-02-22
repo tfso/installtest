@@ -11,6 +11,7 @@ function ping (host, callback){
     console.log("is xsd defined" , !!xsd);
     console.log(xsd);
     callback("This is a message");
+    
 }
 
 function query_host (){
