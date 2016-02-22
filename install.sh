@@ -1,1 +1,1 @@
-npm install jasmine-node -g
+npm install node-gyp -g
