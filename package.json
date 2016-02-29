@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "test": "jasmine-node ./"
+    "test": "jasmine-node --verbose ./"
   },
   "dependencies": {
     "libxml-xsd": "^0.5.1"
