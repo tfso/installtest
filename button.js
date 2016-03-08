@@ -633,13 +633,7 @@ Ext.define('Ext.button.Button', {
         if (me.menu) {
             // Flag that we'll have a splitCls
             me.split = true;
-
-            // retrieve menu by id or instantiate instance if needed
-            me.menu = Ext.menu.Manager.get(me.menu);
-
-            // Use ownerButton as the upward link. Menus *must have no ownerCt* - they are global floaters.
-            // Upward navigation is done using the up() method.
-            me.menu.ownerButton = me;
+            me.setMenu(me.menu, /*destroyMenu*/false);
         }
 
         // Accept url as a synonym for href
@@ -747,6 +741,61 @@ Ext.define('Ext.button.Button', {
         Ext.applyIf(me.renderData, me.getTemplateArgs());
     },
 
+    /**
+     * Sets a new menu for this button. Pass a falsy value to unset the current menu.
+     * To destroy the previous menu for this button, explicitly pass `false` as the second argument. If this is not set, the destroy will depend on the
+     * value of {@link #cfg-destroyMenu}.
+     *
+     * @param {Ext.menu.Menu/String/Object/null} menu Accepts a menu component, a menu id or a menu config.
+     * @param {Boolean} destroyMenu By default, will destroy the previous set menu and remove it from the menu manager. Pass `false` to prevent the destroy.
+     */
+    setMenu: function (menu, destroyMenu) {
+        var me = this,
+            oldMenu = me.menu;
+
+        if (oldMenu && destroyMenu !== false && me.destroyMenu) {
+            oldMenu.destroy();
+        }
+
+        if (oldMenu) {
+            oldMenu.ownerCmp = oldMenu.ownerButton = null;
+        }
+
+        if (menu) {
+            // Retrieve menu by id or instantiate instance if needed.
+            menu = Ext.menu.Manager.get(menu);
+
+            // Use ownerCmp as the upward link. Menus *must have no ownerCt* - they are global floaters.
+            // Upward navigation is done using the up() method.
+            menu.ownerCmp = menu.ownerButton = me;
+
+            me.mon(menu, {
+                scope: me,
+                show: me.onMenuShow,
+                hide: me.onMenuHide
+            });
+
+            // If the button wasn't initially configured with a menu or has previously been unset then we need
+            // to poke the split classes onto the btnWrap dom element.
+            if (!oldMenu) {
+                me.split = true;
+                if (me.rendered) {
+                    me.btnWrap.addCls(me.getSplitCls());
+                    me.updateLayout();
+                }
+            }
+
+            me.menu = menu;
+        } else {
+            if (me.rendered) {
+                me.btnWrap.removeCls(me.getSplitCls());
+                me.updateLayout();
+            }
+            me.split = false;
+            me.menu = null;
+        }
+    },
+
     // @private
     onRender: function() {
         var me = this,
@@ -783,12 +832,6 @@ Ext.define('Ext.button.Button', {
 
         // Check if the button has a menu
         if (me.menu) {
-            me.mon(me.menu, {
-                scope: me,
-                show: me.onMenuShow,
-                hide: me.onMenuHide
-            });
-
             me.keyMap = new Ext.util.KeyMap({
                 target: me.el,
                 key: Ext.EventObject.DOWN,
@@ -1087,8 +1130,8 @@ Ext.define('Ext.button.Button', {
         if (me.rendered) {
             me.clearTip();
         }
-        if (me.menu && me.destroyMenu !== false) {
-            Ext.destroy(me.menu);
+        if (me.menu && me.destroyMenu) {
+            me.menu.destroy();
         }
         Ext.destroy(me.btnInnerEl, me.repeater);
         me.callParent();
@@ -1557,10 +1600,10 @@ Ext.define('Ext.button.Button', {
     onDownKey: function() {
         var me = this;
 
-        if (!me.disabled) {
-            if (me.menu) {
-                me.showMenu();
-            }
+        if (me.menu && !me.disabled) {
+            me.showMenu();
+            e.stopEvent();
+            return false;
         }
     }
 
