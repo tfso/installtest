@@ -1,20 +1,4 @@
-/**
- * Created by Edgar on 08.03.2016.
- */
-/**
- * @docauthor Robert Dougan <rob@sencha.com>
- *
- * Create simple buttons with this component. Customisations include {@link #iconAlign aligned}
- * {@link #iconCls icons}, {@link #cfg-menu dropdown menus}, {@link #tooltip tooltips}
- * and {@link #scale sizing options}. Specify a {@link #handler handler} to run code when
- * a user clicks the button, or use {@link #listeners listeners} for other events such as
- * {@link #mouseover mouseover}. Example usage:
- *
- *     @example
- *     Ext.create('Ext.Button', {
- *         text: 'Click me',
- *         renderTo: Ext.getBody(),
- *         handler: function() {
+ /*         renderTo: Ext.getBody(),
  *             alert('You clicked the button!');
  *         }
  *     });
@@ -146,11 +130,15 @@ Ext.define('Ext.button.Button', {
         'Ext.util.KeyMap'
     ],
 
+    mixins: {
+        queryable: 'Ext.Queryable'
+    },
+
     alternateClassName: 'Ext.Button',
     /* End Definitions */
 
-    /*
-     * @property {Boolean} isAction
+    /**
+     * @property {Boolean}
      * `true` in this class to identify an object as an instantiated Button, or subclass thereof.
      */
     isButton: true,
@@ -185,6 +173,8 @@ Ext.define('Ext.button.Button', {
     /**
      * @cfg {String} icon
      * The path to an image to display in the button.
+     *
+     * There are no default icons that come with Ext JS.
      */
 
     /**
@@ -235,8 +225,10 @@ Ext.define('Ext.button.Button', {
 
     /**
      * @cfg {Number} tabIndex
-     * Set a DOM tabIndex for this button.
+     * Sets a DOM tabIndex for this button. tabIndex may be set to `-1` in order to remove
+     * the button from the tab rotation.
      */
+    tabIndex: 0,
 
     /**
      * @cfg {Boolean} [allowDepress=true]
@@ -290,6 +282,8 @@ Ext.define('Ext.button.Button', {
     /**
      * @cfg {String} iconCls
      * A css class which sets a background image to be used as the icon for this button.
+     *
+     * There are no default icon classes that come with Ext JS.
      */
 
     /**
@@ -300,12 +294,6 @@ Ext.define('Ext.button.Button', {
      * config option accepts a string with the charCode and font-family separated by the
      * `@` symbol. For example '65@My Font Family'.
      */
-
-    /**
-     * @cfg {String} type
-     * The type of `<input>` to create: submit, reset or button.
-     */
-    type: 'button',
 
     /**
      * @cfg {String} clickEvent
@@ -385,12 +373,12 @@ Ext.define('Ext.button.Button', {
     hrefTarget: '_blank',
 
     /**
-     * @cfg {Boolean} destroyMenu
-     * Whether or not to destroy any associated menu when this button is destroyed. The menu
-     * will be destroyed unless this is explicitly set to false.
+     * @cfg {Boolean} [destroyMenu=true]
+     * Whether or not to destroy any associated menu when this button is destroyed.
+     * In addition, a value of `true` for this config will destroy the currently bound menu when a new
+     * menu is set in {@link #setMenu} unless overridden by that method's destroyMenu function argument.
      */
-
-    border: true,
+    destroyMenu: true,
 
     /**
      * @cfg {Object} baseParams
@@ -403,6 +391,8 @@ Ext.define('Ext.button.Button', {
      * override {@link #baseParams}. New params can be set using the {@link #setParams} method.
      */
 
+    ariaRole: 'button',
+
     childEls: [
         'btnEl', 'btnWrap', 'btnInnerEl', 'btnIconEl'
     ],
@@ -411,40 +401,31 @@ Ext.define('Ext.button.Button', {
     // Without it, clicking anywhere on a button disrupts current selection and cursor position
     // in HtmlEditor.
     renderTpl: [
-        '<div id="{id}-btnWrap" class="{baseCls}-wrap',
+        '<span id="{id}-btnWrap" role="presentation" class="{baseCls}-wrap',
         '<tpl if="splitCls"> {splitCls}</tpl>',
         '{childElCls}" unselectable="on">',
-        '<a id="{id}-btnEl" class="{baseCls}-button" role="button" hidefocus="on" unselectable="on"',
-
-        // If developer specified their own tabIndex...
-        '<tpl if="tabIndex != null>',
-        ' tabIndex="{tabIndex}"',
-        '</tpl>',
-
-        // If the button is to function as a link...
-        '<tpl if="href">',
-        ' href="{href}"',
-        '<tpl if="hrefTarget">',
-        ' target="{hrefTarget}"',
-        '</tpl>',
-        '</tpl>',
-        '>',
+        '<span id="{id}-btnEl" class="{baseCls}-button" role="presentation">',
         '<span id="{id}-btnInnerEl" class="{baseCls}-inner {innerCls}',
         '{childElCls}" unselectable="on">',
         '{text}',
         '</span>',
-        '<span role="img" id="{id}-btnIconEl" class="{baseCls}-icon-el {iconCls}',
+        '<span role="presentation" id="{id}-btnIconEl" class="{baseCls}-icon-el {iconCls}',
         '{childElCls} {glyphCls}" unselectable="on" style="',
         '<tpl if="iconUrl">background-image:url({iconUrl});</tpl>',
         '<tpl if="glyph && glyphFontFamily">font-family:{glyphFontFamily};</tpl>">',
         '<tpl if="glyph">&#{glyph};</tpl><tpl if="iconCls || iconUrl">&#160;</tpl>',
         '</span>',
-        '</a>',
-        '</div>',
+        '</span>',
+        '</span>',
         // if "closable" (tab) add a close element icon
         '<tpl if="closable">',
-        // the href attribute is required for the :hover selector to work in IE6/7/quirks
-        '<a id="{id}-closeEl" class="{baseCls}-close-btn" title="{closeText}" href="#"></a>',
+        '<span id="{id}-closeEl" role="presentation"',
+        ' class="{baseCls}-close-btn"',
+        '<tpl if="closeText">',
+        ' title="{closeText}" aria-label="{closeText}"',
+        '</tpl>',
+        '>',
+        '</span>',
         '</tpl>'
     ],
 
@@ -522,15 +503,43 @@ Ext.define('Ext.button.Button', {
 
     frame: true,
 
+    autoEl: {
+        tag: 'a',
+        hidefocus: 'on',
+        unselectable: 'on'
+    },
+
+    hasFrameTable: function () {
+        // Instead of browser sniffing, it's easier to check for the presence of frameTable.
+        // If present, we know that it's a browser that doesn't support CSS3BorderRadius.
+        return this.href && this.frameTable;
+    },
+
+    frameTableListener: function () {
+        if (!this.disabled) {
+            this.doNavigate();
+        }
+    },
+
+    doNavigate: function () {
+        // Non-HTML5 browsers don't support a block element inside an A tag.
+        // http://stackoverflow.com/questions/5682048/putting-a-table-inside-a-hyperlink-not-working-in-ie
+        // Note use this.getHref() to append any params to the url.
+        if (this.hrefTarget === '_blank') {
+            window.open(this.getHref(), this.hrefTarget);
+        } else {
+            location.href = this.getHref();
+        }
+    },
+
     // A reusable object used by getTriggerRegion to avoid excessive object creation.
     _triggerRegion: {},
 
-    // inherit docs
     initComponent: function() {
         var me = this;
 
         // Ensure no selection happens
-        me.addCls('x-unselectable');
+        me.addCls(Ext.baseCSSPrefix + 'unselectable');
 
         me.callParent(arguments);
 
@@ -658,39 +667,12 @@ Ext.define('Ext.button.Button', {
         me.glyphCls = me.baseCls + '-glyph';
     },
 
-    // inherit docs
     getActionEl: function() {
-        return this.btnEl;
+        return this.el;
     },
 
-    // inherit docs
     getFocusEl: function() {
-        return this.useElForFocus ? this.el : this.btnEl;
-    },
-
-    // Buttons add the focus class to the *outermost element*, not the focusEl!
-    onFocus: function(e) {
-        var me = this;
-
-        // Set this flag, so that when AbstractComponent's onFocus gets the focusEl to add the focusCls
-        // to, it will get the encapsulating element - that's what the CSS rules for Button need right now
-        me.useElForFocus = true;
-        me.callParent(arguments);
-        me.useElForFocus = false;
-    },
-
-    // See comments in onFocus
-    onBlur : function(e) {
-        this.useElForFocus = true;
-        this.callParent(arguments);
-        this.useElForFocus = false;
-    },
-
-    // See comments in onFocus
-    onDisable: function(){
-        this.useElForFocus = true;
-        this.callParent(arguments);
-        this.useElForFocus = false;
+        return this.el;
     },
 
     // @private
@@ -709,23 +691,41 @@ Ext.define('Ext.button.Button', {
 
     getComponentCls: function() {
         var me = this,
-            cls = [];
+            cls;
 
         // Check whether the button has an icon or not, and if it has an icon, what is the alignment
         if (me.iconCls || me.icon || me.glyph) {
-            if (me.text) {
-                cls.push('icon-text-' + me.iconAlign);
-            } else {
-                cls.push('icon');
-            }
+            cls = [me.text ? 'icon-text-' + me.iconAlign : 'icon'];
         } else if (me.text) {
-            cls.push('noicon');
+            cls = ['noicon'];
+        } else {
+            cls = [];
         }
 
         if (me.pressed) {
-            cls.push(me.pressedCls);
+            cls[cls.length] = me.pressedCls;
         }
         return cls;
+    },
+
+    getElConfig: function() {
+        var me = this,
+            config = me.callParent(),
+            href = me.getHref(),
+            hrefTarget = me.hrefTarget;
+
+        if (config.tag === 'a') {
+            if (!me.disabled) {
+                config.tabIndex = me.tabIndex;
+            }
+            if (href) {
+                config.href = href;
+                if (hrefTarget) {
+                    config.target = hrefTarget;
+                }
+            }
+        }
+        return config;
     },
 
     beforeRender: function () {
@@ -832,6 +832,14 @@ Ext.define('Ext.button.Button', {
 
         // Check if the button has a menu
         if (me.menu) {
+            /***
+             *
+             *
+             *
+             *
+             *
+             * @type {Ext.util.KeyMap}
+             */
             me.keyMap = new Ext.util.KeyMap({
                 target: me.el,
                 key: Ext.EventObject.DOWN,
@@ -856,6 +864,10 @@ Ext.define('Ext.button.Button', {
         // Add whatever button listeners we need
         me.mon(btn, btnListeners);
 
+        if (me.hasFrameTable()) {
+            me.mon(me.frameTable, 'click', me.frameTableListener, me);
+        }
+
         // If the listeners object had an entry for our clickEvent, add a listener now
         if (addOnclick) {
             me.mon(btn, me.clickEvent, me.onClick, me);
@@ -870,16 +882,19 @@ Ext.define('Ext.button.Button', {
      *
      * Instances or subclasses which use a different Template to create a different DOM structure may need to provide
      * their own implementation of this method.
+     * @protected
      *
      * @return {Object} Substitution data for a Template. The default implementation which provides data for the default
      * {@link #template} returns an Object containing the following properties:
-     * @return {String} return.type The `<button>`'s {@link #type}
+     * @return {String} return.innerCls A CSS class to apply to the button's text element.
      * @return {String} return.splitCls A CSS class to determine the presence and position of an arrow icon.
      * (`'x-btn-arrow'` or `'x-btn-arrow-bottom'` or `''`)
-     * @return {String} return.cls A CSS class name applied to the Button's main `<tbody>` element which determines the
-     * button's scale and icon alignment.
+     * @return {String} return.iconUrl The url for the button icon.
+     * @return {String} return.iconCls The CSS class for the button icon.
+     * @return {String} return.glyph The glyph to use as the button icon.
+     * @return {String} return.glyphCls The CSS class to use for the glyph element.
+     * @return {String} return.glyphFontFamily The CSS font-family to use for the glyph element.
      * @return {String} return.text The {@link #text} to display ion the Button.
-     * @return {Number} return.tabIndex The tab index within the input flow.
      */
     getTemplateArgs: function() {
         var me = this,
@@ -894,9 +909,6 @@ Ext.define('Ext.button.Button', {
         }
 
         return {
-            href     : me.getHref(),
-            hrefTarget: me.hrefTarget,
-            type     : me.type,
             innerCls : me.getInnerCls(),
             splitCls : me.getSplitCls(),
             iconUrl  : me.icon,
@@ -905,7 +917,7 @@ Ext.define('Ext.button.Button', {
             glyphCls: glyph ? me.glyphCls : '',
             glyphFontFamily: glyphFontFamily,
             text     : me.text || '&#160;',
-            tabIndex : me.tabIndex == null ? 0 : me.tabIndex
+            closeText: me.closeText
         };
     },
 
@@ -918,7 +930,7 @@ Ext.define('Ext.button.Button', {
      */
     setHref: function(href) {
         this.href = href;
-        this.btnEl.dom.href = this.getHref();
+        this.el.dom.href = this.getHref();
     },
 
     /**
@@ -936,13 +948,29 @@ Ext.define('Ext.button.Button', {
     /**
      * Sets the href of the link dynamically according to the params passed, and any {@link #baseParams} configured.
      *
+     *     var button = Ext.create('Ext.button.Button', {
+     *         renderTo   : document.body,
+     *         text       : 'Open',
+     *         href       : 'http://www.sencha.com',
+     *         baseParams : {
+     *             foo : 'bar'
+     *         }
+     *     });
+     *
+     *     button.setParams({
+     *         company : 'Sencha'
+     *     });
+     *
+     * When clicked, this button will open a new window with the url http://www.sencha.com/?foo=bar&company=Sencha because
+     * the button wased configured with the {@link #baseParams} to have `foo` = `'bar'` and then used {@link #setParams} to set the `company` parameter to `'Sencha'`.
+     *
      * **Only valid if the Button was originally configured with a {@link #href}**
      *
      * @param {Object} params Parameters to use in the href URL.
      */
     setParams: function(params) {
         this.params = params;
-        this.btnEl.dom.href = this.getHref();
+        this.el.dom.href = this.getHref();
     },
 
     getSplitCls: function() {
@@ -997,7 +1025,7 @@ Ext.define('Ext.button.Button', {
             if (btnIconEl) {
                 // Remove the previous iconCls from the button
                 btnIconEl.removeCls(oldCls);
-                btnIconEl.addCls(cls || '');
+                btnIconEl.addCls(cls);
                 me.setComponentCls();
                 if (me.didIconStateChange(oldCls, cls)) {
                     me.updateLayout();
@@ -1066,12 +1094,12 @@ Ext.define('Ext.button.Button', {
             if (tooltip) {
                 if (Ext.quickTipsActive && Ext.isObject(tooltip)) {
                     Ext.tip.QuickTipManager.register(Ext.apply({
-                            target: me.btnEl.id
+                            target: me.el.id
                         },
                         tooltip));
                     me.tooltip = tooltip;
                 } else {
-                    me.btnEl.dom.setAttribute(me.getTipAttr(), tooltip);
+                    me.el.dom.setAttribute(me.getTipAttr(), tooltip);
                 }
             }
         } else {
@@ -1115,12 +1143,12 @@ Ext.define('Ext.button.Button', {
     // @private
     clearTip: function() {
         var me = this,
-            btnEl = me.btnEl;
+            el = me.el;
 
         if (Ext.quickTipsActive && Ext.isObject(me.tooltip)) {
-            Ext.tip.QuickTipManager.unregister(btnEl);
+            Ext.tip.QuickTipManager.unregister(el);
         } else {
-            btnEl.dom.removeAttribute(me.getTipAttr());
+            el.dom.removeAttribute(me.getTipAttr());
         }
     },
 
@@ -1142,7 +1170,6 @@ Ext.define('Ext.button.Button', {
         var me = this;
         if (me.rendered) {
             me.doc.un('mouseover', me.monitorMouseOver, me);
-            me.doc.un('mouseup', me.onMouseUp, me);
             delete me.doc;
 
             Ext.destroy(me.keyMap);
@@ -1249,14 +1276,14 @@ Ext.define('Ext.button.Button', {
 
         if (me.rendered) {
             if (me.tooltip && Ext.quickTipsActive && me.getTipAttr() != 'title') {
-                Ext.tip.QuickTipManager.getQuickTip().cancelShow(me.btnEl);
+                Ext.tip.QuickTipManager.getQuickTip().cancelShow(me.el);
             }
             if (menu.isVisible()) {
                 menu.hide();
             }
 
             if (!fromEvent || me.showEmptyMenu || menu.items.getCount() > 0) {
-                menu.showBy(me.el, me.menuAlign, (Ext.isIEQuirks || Ext.isIE6) ? [-2, -2] : undefined);
+                menu.showBy(me.el, me.menuAlign);
             }
         }
         return me;
@@ -1289,9 +1316,7 @@ Ext.define('Ext.button.Button', {
     // @private
     onClick: function(e) {
         var me = this;
-        if (me.preventDefault || (me.disabled && me.getHref()) && e) {
-            e.preventDefault();
-        }
+        me.doPreventDefault(e);
 
         // Can be triggered by ENTER or SPACE keydown events which set the button property.
         // Only veto event handling if it's a mouse event with an alternative button.
@@ -1305,7 +1330,13 @@ Ext.define('Ext.button.Button', {
         }
     },
 
-    fireHandler: function(e){
+    doPreventDefault: function(e) {
+        if (this.preventDefault || (this.disabled && this.getHref()) && e) {
+            e.preventDefault();
+        }
+    },
+
+    fireHandler: function(e) {
         var me = this,
             handler = me.handler;
 
@@ -1313,11 +1344,10 @@ Ext.define('Ext.button.Button', {
             if (handler) {
                 handler.call(me.scope || me, me, e);
             }
-            me.blur();
         }
     },
 
-    doToggle: function(){
+    doToggle: function() {
         var me = this;
         if (me.enableToggle && (me.allowDepress !== false || !me.pressed)) {
             me.toggle();
@@ -1496,25 +1526,29 @@ Ext.define('Ext.button.Button', {
         me.fireEvent('menutriggerout', me, me.menu, e);
     },
 
-    // inherit docs
-    enable : function(silent) {
+    enable: function(silent) {
         var me = this;
 
         me.callParent(arguments);
 
         me.removeClsWithUI('disabled');
+        if (me.rendered) {
+            me.el.dom.setAttribute('tabIndex', me.tabIndex);
+        }
 
         return me;
     },
 
-    // inherit docs
-    disable : function(silent) {
+    disable: function(silent) {
         var me = this;
 
         me.callParent(arguments);
 
         me.addClsWithUI('disabled');
         me.removeClsWithUI(me.overCls);
+        if (me.rendered) {
+            me.el.dom.removeAttribute('tabIndex');
+        }
 
         // IE renders disabled text by layering gray text on top of white text, offset by 1 pixel. Normally this is fine
         // but in some circumstances (such as using formBind) it gets confused and renders them side by side instead.
@@ -1542,7 +1576,6 @@ Ext.define('Ext.button.Button', {
         me.setUI(ui);
     },
 
-    // inherit docs
     setUI: function(ui) {
         var me = this;
 
@@ -1557,22 +1590,31 @@ Ext.define('Ext.button.Button', {
         // me.disabledCls += ' ' + me.baseCls + '-' + me.ui + '-disabled';
     },
 
+
     // @private
     onMouseDown: function(e) {
         var me = this;
+
+        if (Ext.isIE) {
+            // In IE the use of unselectable on the button's elements causes the element
+            // to not receive focus, even when it is directly clicked.
+            me.getFocusEl().focus();
+        }
+
         if (!me.disabled && e.button === 0) {
+            Ext.button.Manager.onButtonMousedown(me, e);
             me.addClsWithUI(me.pressedCls);
-            me.doc.on('mouseup', me.onMouseUp, me);
         }
     },
     // @private
     onMouseUp: function(e) {
         var me = this;
-        if (e.button === 0) {
+
+        // If the external mouseup listener of the ButtonManager fires after the button has been destroyed, ignore.
+        if (!me.isDestroyed && e.button === 0) {
             if (!me.pressed) {
                 me.removeClsWithUI(me.pressedCls);
             }
-            me.doc.un('mouseup', me.onMouseUp, me);
         }
     },
     // @private
@@ -1589,6 +1631,7 @@ Ext.define('Ext.button.Button', {
         me.removeClsWithUI(me.menuActiveCls);
         me.ignoreNextClick = Ext.defer(me.restoreClick, 250, me);
         me.fireEvent('menuhide', me, me.menu);
+        me.focus();
     },
 
     // @private
@@ -1597,7 +1640,7 @@ Ext.define('Ext.button.Button', {
     },
 
     // @private
-    onDownKey: function() {
+    onDownKey: function(k, e) {
         var me = this;
 
         if (me.menu && !me.disabled) {
@@ -1606,5 +1649,4 @@ Ext.define('Ext.button.Button', {
             return false;
         }
     }
-
 });
